@@ -98,3 +98,160 @@ B2U4([0001]) = 1
 B2U4([0101]) = 5
 B2U4([1011]) = 11
 B2U4([1111]) = 15
+
+- In computers, we often use binary numbers to represent data. An unsigned binary number is a representation where all the bits are positive weights.
+- Imagine a bar graph where every bit position ` i`` in the number adds a height of  `2^i` to the bar.
+
+## Two's-Complement Encoding (B2T)
+
+- Two's complement is a method to represent both positive and negative numbers in binary.
+- The most significant bit determines the sign of the number.
+- Range:
+  - Smallest: `-2^(w-1)`
+  - Largest: `2^(w-1) - 1`
+  - For a 4-bit number, it will be -8 and 7
+- Alternative Representations:
+  - One's Complement (B20): flipping all the bits gets the negative representation. This has two representations for zero.
+  - Sign Magnitude (B2S): leftmost bit indicates sign, rest of bits represent magnitude. Also has two zeros: positive and negative.
+- Programming Considerations:
+  - Portability: Different computers might represent numbers differently.
+  - Java Standards: Java uses two's complement with specified bit widths.
+  - C Standards: C provides varying sizes for data types like int and long. For guaranteed sizes, C99 introduced types like int32_t.
+
+## Conversion Between Signed and Unsigned
+
+- In the C programming language, one can cast between various numeric data types. An important aspect to note is the casting between signed(`int`) and unsigned(`unsigned int`) integers. From a purely mathematical standpoint, there are several conventions you might think of for such conversions. For instance, should converting a negative to `unsigned` give zero? However, C's approach is mainly from a bit-level perspective rather than a numeric one.
+
+* Consider the example:
+
+```C
+short int v = -12345;
+unsigned short uv = (unsigned short) v;
+printf("v = %d, uv = %u\n", v, uv);
+```
+
+On a two's-complement machine, this code outputs:
+
+```
+v = -12345, uv = 53191
+
+```
+
+- The key takeaway is that the bit patterns of the values remain identical, but their interpretation changes. The 16-bit two's complement representation of -12345 matches the 16-bit unsigned representation of 53191.
+
+* In another scenario:
+
+```C
+unsigned u = 4294967295u; /* UMax */
+int tu = (int) u;
+
+```
+
+The output is:
+
+```
+u = 4294967295, tu = -1
+
+```
+
+- For a 32-bit word size, the bit patterns representing `4.294.967.295` (unsigned) and `-1` (two's complement) are identical.
+
+* To delve deeper into the conversion process, we can define a set of mathematical functions:
+  - `U2Bw`: maps numbers to their bit representations in unsigned form
+  - `T2Bw`: maps numbers to their bit representations in two's complement form.
+
+- We can also define:
+
+  - `T2Uw(x)`: Given a two's-complement number x, yields an unsigned number with the same bit pattern
+  - `U2Tw(x)`: Given an unsigned number x, yields a two's-complement number with the same bit pattern
+
+  ```
+  T2Uw(x) =
+  - x + 2^w if x < 0
+  - x if x ≥ 0
+
+  ```
+
+  - For instance, T2U16(-12345) = 53.191
+  - To sum it up, conversions between signed and unsigned integers in C is based on a bit-level perspective. Within a certain range, the numeric values have the same representation in both formats. Outside this range, conversions either add or subtract 2^w.
+
+  ## Signed versus Unsigned in C
+
+  - C supports both signed and unsigned arithmetic for its integer data types.
+  - Most machines use two's complement for signed numbers, although the C standard doesn't mandate it.
+  - By default, most numbers in C are considered signed. Appending `U` or `u` makes a constant unsigned.
+  - C allows conversion between unsigned and signed. On most systems, the underlying bit pattern doesn't change during these conversions. For example, converting -1 (signed) to unsigned won't alter its bit representation but will change its interpretation.
+  - Explicit casting can be done using syntax like `(int) ux`, which converts the unsigned variable `ux` to signed. However, conversions can also occur implicitly. For instance, if you assign an unsigned value to a signed variable without casting, the value is implicitly cast to signed
+  - `printf` doesn't use type information. It simply interprets the bits of a value based on the format specifier (%d, %u, %x, etc.). Thus, you can print a signed integer using %u or an unsigned integer using %d. This might produce unexpected results if you're not careful.
+
+  For example:
+
+  ```
+  int x = -1;
+  unsigned u = 2147483648; /* 2 to the 31st */
+  printf("x = %u = %d\n", x, x);
+  printf("u = %u = %d\n", u, u);
+
+  ```
+
+- This code produces:
+
+```
+x = 4294967295 = -1
+u = 2147483648 = -2147483648
+
+```
+
+- This result occurs because `%u` interprets the bit pattern as an unsigned integer and `%d` interprets it as a signed integer. In two's complement, `-1 is represented by all 1s, which is `4294967295`when interpreted as an unsigned integer. Similarly,`2147483648`(2^31) is the smallest possible signed 32-bit integer when interpreted in two's complement, hence`2147483648`
+- C has a rule where if one operand of an operation is signed and the other is unsigned, the signed operand is implicitly cast to unsigned. This can result in unexpected behavior, especially with relational operators.
+
+```C
+int signed_var = -1;
+unsigned int unsigned_var = 0;
+if (signed_var < unsigned_var) {
+    /* This block won't execute */
+}
+
+```
+
+- In the above code, the comparison `-1 < 0U` seems like it should be true, but it's not. This is because `-1` gets implicitly cast to unsigned, which is `4294967295` for a 32-bit int. Therefore, the actual comparison becomes false.
+
+## Expanding the Bit Representation of a Number
+
+- When we move from a smaller to a larger integer type, the process involves adding extra bits to the representation. There are two primary methods, depending on whether the number is signed or unsigned:
+  - ZERO EXTENSION (FOR UNSIGNED NUMBERS): for unsigned numbers, simply add leading zeros
+  - SIGN EXTENSION (FOR SIGNED NUMBERS): for two's-complement signed numbers, extend the number by copying the most significant bit (MSB)
+
+```C
+short sx = -12345; /* -12345 */
+2 unsigned short usx = sx; /* 53191 */
+3 int x = sx; /* -12345 */
+4 unsigned ux = usx; /* 53191 */
+5
+6 printf("sx = %d:\t", sx);
+7 show_bytes((byte_pointer) &sx, sizeof(short));
+8 printf("usx = %u:\t", usx);
+9 show_bytes((byte_pointer) &usx, sizeof(unsigned short));
+10 printf("x = %d:\t", x);
+```
+
+```
+sx = -12345: cf c7
+usx = 53191: cf c7
+x = -12345: ff ff cf c7
+ux = 53191: 00 00 cf c7
+```
+
+- `sx` and `usx` both have representation `cf c7` when considered as 16-bit numbers.
+- when `sx` is cast to a 32-bit integer, it is sign extended, resulting in `ff ff cf c7`
+- when `usx` is cast to a 32-bit unsigned integer, it is zero extended, resulting in `00 00 cf c7`
+
+* The order in which you change the size and type of a number matters in C. For instance, in the code snippet:
+
+```C
+short sx = -12345;
+unsigned uy = sx;
+```
+
+- The value of `uy` isn't immediately obvious. What happens is that `sx` is first converted to a regular `int` (with sign extension) and then to an `unsigned` (which just reinterprets the bits). The conversion results in the value `4294954951` with a memory representation of `ff ff cf c7`
+- In C, when you assign a smaller type to a larger type, the smaller type is first promoted to the larger type. In this case, `short` is promoted to `int`. Since `sx` is a negative short, sign extension occurs, and its `int` representation is negative as well. When this negative `int` is assigned to an `unsigned`, the bits don't change, ut the interpretation does. So, the two's complement representation of `-12345` as an `int` is interpreted as `4294954951` when viewed as an `unsigned`
