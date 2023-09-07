@@ -255,3 +255,207 @@ unsigned uy = sx;
 
 - The value of `uy` isn't immediately obvious. What happens is that `sx` is first converted to a regular `int` (with sign extension) and then to an `unsigned` (which just reinterprets the bits). The conversion results in the value `4294954951` with a memory representation of `ff ff cf c7`
 - In C, when you assign a smaller type to a larger type, the smaller type is first promoted to the larger type. In this case, `short` is promoted to `int`. Since `sx` is a negative short, sign extension occurs, and its `int` representation is negative as well. When this negative `int` is assigned to an `unsigned`, the bits don't change, ut the interpretation does. So, the two's complement representation of `-12345` as an `int` is interpreted as `4294954951` when viewed as an `unsigned`
+
+## Truncation in Computer Arithmetic
+
+When working with data types, the number of bits allocated for a value is fixed. However, sometimes, for various reasons, the number of bits representing a number might be reduced, leading to truncation. Truncation essentially removes the higher-order bits, which can alter the value.
+
+### Unsigned numbers:
+
+Truncating unsigned numbers is relatively straightforward since we're only dealing with positive integers. When you truncate an unsigned number, you are essentially "chopping off" the most significant bits.
+
+- Principle:
+  For an unsigned number x represented by the bit vector x = [xw−1, xw−2, ... , x0], when truncated to k bits to get x', the numeric value x' is x mod 2^k.
+- Example:
+  Suppose we have an 8-bit unsigned number `x` represented as `11010101` (decimal: 213). Truncating this to 4 bits would give `x` as `0101` (decimal 5). The numeric value is equivalent to `213 mod 2^4 = 5`.
+
+### Two's-Complement Numbers
+
+Two's-complement numbers include both positive and negative numbers, with the MSB determining the sign. When truncating, the MSB might shift, effectively changing the number's sign and magnitude.
+
+- Principle:
+  For `x` in two's-complement form, when truncated to `k` bits to get `x`, the value is: `x` = U2Tk(x mod 2^k)`
+- Example:
+  Consider the number `x = 53191` (in 32-bit `int`). This value in binary is: `0000 0000 0000 1100 1101 1111 0111`
+  If we truncate this to a 16-bit `short`, we only consider: `1100 1101 1111 0111`
+  This binary represents `-12345` in two's-complement form, thus `x = -12345`
+
+### Practical Scenarios
+
+- 1. Memory Limitations: On embedded systems with limited memory, sometimes, to save space, developers might truncate larger data types into smaller ones
+- 2. Network Communications: When sending data over a network, a device might truncate values to adhere to specific protocols or to improve transmission speed
+- 3. Data Compression: In compression algorithms, truncation might be used to achieve higher compression rations
+- 4. Data Type Casting: In programming, when you cast a larger data type to a smaller one(like `int` to `short` in C), truncation can occur
+
+## Understanding Implicit Casting In C
+
+Implicit casting in C is where the compiler automatically convers one data type into another without explicit instruction. This can lead to unintended behavior.
+
+```C
+float sum_elements(float a[], unsigned length) {
+    int i;
+    float result = 0;
+    for (i = 0; i <= length-1; i++)
+        result += a[i];
+    return result;
+}
+```
+
+`PROBLEM`: When `length` is 0, the loop condition `i <= length - 1` wraps around because `length - 1` is unsigned. Thus, instead of terminating, the loop accesses memory out-of-bounds, leading to an error.
+
+Solution:
+
+```C
+for (i = 0; i < length; i++)
+```
+
+- C has both signed and unsigned integers. Unsigned integers are mainly used when considering words as collections of bits
+- Java, however, doesn't have unsigned integers. It exclusively uses signed two's-complement integers. The usual shift operation `>>` in Java is arithmetic, while `>>>` performs a logical shift
+
+## Integer Arithmetic
+
+Arithmetic operations on a computer can sometimes produce unexpected results due to finite word sizes.
+
+### Unsigned Addition
+
+When two non-negative integers, `x` and `y` (each less than `2^w`), are added, their sum can be in the range `0` to `2^(w+1) - 2`. This sum might require more than `w` bits. To handle this, C uses modular arithmetic.
+
+- Example:
+  Consider a 4-bit representation of numbers:
+
+```makefile
+x = 9  -> 1001
+y = 12 -> 1100
+```
+
+Their integer sum is 21 (10101 in binary). Since this is a 5-bit number, and we're using a 4-bit representation, we drop the highest bit and get `0101`, which is 5 in decimal. So, `9 + 12 = 5` when considering 4-bit unsigned addition.
+
+- Detecting Overflow: An overflow in unsigned addition occurs if the result is less than either of the operands. If `s = x + y` and `s < x`, then an overflow has occurred.
+
+### Unsigned Negation
+
+In C, negating an unsigned number doesn't simply invert its bits. Instead, the result is computed as the modulus minus the number.
+
+- Example:
+  For 4-bit numbers:
+
+```makefile
+x = 3 -> 0011
+-u4 x = 2^4 -3 = 13 -> 1101
+```
+
+The negation of `3` in a 4-bit representation is `13`.
+
+## Two's-Complement Addition Simplified:
+
+Two's complement representation is commonly used in computers to represent signed integers. The highest bit represents the sign (0 for positive and 1 for negative), and the remaining bits represent the magnitude.
+For instance, for a 3-bit number:
+
+- `010` is +2, `110` is -2.
+
+When adding two numbers in two's-complement representation, the sum might fall outside the range that can be represented with the given number of bits. In such cases, we get an overflow.
+
+- Positive Overflow: Occurs when we add two positive numbers but get a negative result
+- Negative Overflow: Occurs when we add two negative numbers but get a positive result
+
+Given a w-bit two's complement system:
+
+- range for numbers: -2^(w-1) to 2^(w-1)-1
+- the sum of two numbers in this range can be from -2^w to 2^w - 2
+
+There are three main scenarios:
+
+- Normal Scenario: The sum falls within the representable range. No overflow occurs.
+- Positive Overflow: The sum exceeds the positive range and wraps around from the highest positive to the smallest negative
+- Negative Overflow: The sum exceeds the negative range and wraps around from the most negative to the largest positive
+
+- Examples:
+
+* 010 (+2) + 001 (+1) = 011 (+3)
+* 011 (+3) + 001 (+1) = 100 (-4). Here, the actual sum, but it can't be represented, so it wraps to -4
+* 101 (-3) + 110 (-2) = 011 (+3). Here, the actual sum is -5, but it wraps to +3.
+
+### Detecting Overflow
+
+- Positive Overflow: If both numbers are positive, but the sum is negative or zero.
+- Negative Overflow: If both numbers are negative, but the sum is positive or zero.
+
+## Two's Complement Negation
+
+Two's-complement is a system used to represent both positive and negative integers in binary. This system was developed so that computers can do subtraction by addition operations.
+
+### Special Bit Patterns
+
+For an 8-bit representation:
+
+- The largest positive number we can represent is `01111111`, which is 127 in decimal.
+- The smallest negative number (the largest magnitude negative) is `10000000`, which is -128 in decimal.
+
+### Negating in Two's-complement
+
+To negate (or find the additive inverse) of a number in two's complement:
+
+- Flip all the bits - one's complement
+- Add 1 to the result
+
+Let's apply this negation technique to our smallest 8-bit number, -128, which has the binary representation `10000000`.
+
+- flip all the bits: 01111111
+- add 1 to the result: 10000000
+
+This phenomenon occurs because in two's-complement arithmetic, the smallest representable number is its own additive inverse. In other words, the negative of the most negative number is still that number. This is a unique property of two's-complement representation. It doesn't mean that the negative of -128 is -128 in the usual mathematical sense; it's just that in the confines of 8-bit two's-complement representation, that's how it works.
+
+## Unsigned Multiplication:
+
+When multiplying unsigned numbers, we are sometimes concerned that the result may need more bits than we have space for. As a result, the product is taken modulo 2^w where w is the bit width. For example, if you multiply two 8-bit numbers and the result needs 10 bits, only the lowest 8 bits of the result are kept.
+
+Let's multiply two 8-bit numbers: A = 10011010 and B = 11010101.
+
+```scss
+      10011010   (154 in decimal)
+    x 11010101   (213 in decimal)
+  ______________
+      10011010   (A shifted 0 places)
+     00000000    (A shifted 1 place since the corresponding bit in B is 0)
+    10011010     (A shifted 2 places)
+   00000000      (A shifted 3 places)
+  10011010       (A shifted 4 places)
+ 00000000        (A shifted 5 places)
+00000000         (A shifted 6 places)
+10011010         (A shifted 7 places)
+________________
+  1010111101110   = 28,782 in decimal
+```
+
+But since we are only keeping the lowest 8 bits, the result is `1110110` = 238 in decimal.
+
+## Two's Complement Multiplication:
+
+Multiplying two numbers in two's complement notation is similar to multiplying them in standard binary. However, when working in a fixed bit-width like 8-bits, overflow can occur, and the product may need to be truncated or wrapped around.
+
+Let's compute the product of -3 and -5 using 8-bi two's complement:
+
+- -3 in 8-bit two's complement: 11111101
+- -5 in 8-bit two's complement: 11111011
+
+Multiplication:
+11111101 (-3 in decimal)
+x 11111011 (-5 in decimal)
+
+---
+
+     11111101   (multiplied by 1, the rightmost bit of -5)
+    11111101   (multiplied by 1, shifted 1 place to the left)
+
+00000000 (multiplied by 0, shifted 2 places to the left)
+00000000 (multiplied by 0, shifted 3 places to the left)
+00000000 (multiplied by 0, shifted 4 places to the left)
+00000000 (multiplied by 0, shifted 5 places to the left)
+00000000 (multiplied by 0, shifted 6 places to the left)
+11111101 (multiplied by 1, shifted 7 places to the left)
+
+---
+
+1111101011
+
+Now, since we're working with 8-bits, we take the rightmost 8 bits, which is 11101011 => -85.
