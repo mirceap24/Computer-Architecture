@@ -166,7 +166,18 @@ int tmin(void) {
  *   Rating: 1
  */
 int isTmax(int x) {
-  return 2;
+  // Calculate the result of negating (x+1)
+    int negatedXPlusOne = ~(x + 1);
+
+    // Check if the negation of (x+1) equals x. If they're equal, this will result in 0 due to properties of XOR.
+    int isEqualToX = !(negatedXPlusOne ^ x);
+
+    // Check if x is NOT equal to -1. If x is -1, (x+1) will be 0, and thus, the result of this operation will be 1.
+    int isNotNegativeOne = x + 1;
+
+    // Combine the results. isEqualToX should be true (1) and isNotNegativeOne should also be true (non-zero).
+    // If both conditions hold, the result is 1 (indicating that x is Tmax), otherwise 0.
+    return isEqualToX && isNotNegativeOne;
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
