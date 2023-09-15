@@ -188,7 +188,14 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+  int mask = 0xAA; // 10101010
+  mask = mask | (mask << 8);
+  mask = mask | (mask << 16);
+
+  // AND operation between x and the mask. If the result is the mask, then all odd bits of x are set.
+  // Use NOT operations to return the correct boolean value 
+  return !((x & mask) ^ mask);
+
 }
 /* 
  * negate - return -x 
@@ -198,7 +205,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x + 1; 
 }
 //3
 /* 
