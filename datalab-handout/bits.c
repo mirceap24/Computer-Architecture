@@ -218,7 +218,10 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int tooLow = x + ~0x2F; // equivalent to x - 0x30, subtraction not allowed
+  int tooHigh = 0x3A + ~x; // equivalent to 0x3A - x
+
+  return !((tooLow | tooHigh) >> 31);
 }
 /* 
  * conditional - same as x ? y : z 
