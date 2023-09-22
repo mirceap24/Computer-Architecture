@@ -300,7 +300,25 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 unsigned floatScale2(unsigned uf) {
-  return 2;
+  unsigned sign = uf & 0x80000000; 
+  unsigned exp = uf & 0x7F800000; 
+  unsigned frac = uf & 0x007FFFFF;
+
+  if (exp == 0x7F800000) {
+    // uf is NaN or infinity, return uf itself 
+    return uf;
+  }
+
+  if (exp == 0 || exp == 1) {
+    // uf is denormalized or very close to denormalized 
+    // multiply the fraction by 2 
+    frac <<= 1; 
+  } else {
+    // increment the exponent to multiply uf by 2 
+    exp += 0x00800000;
+  }
+
+  return sign | exp | frac;
 }
 /* 
  * floatFloat2Int - Return bit-level equivalent of expression (int) f
