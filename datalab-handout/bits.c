@@ -285,8 +285,41 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+    int sign, bit16, bit8, bit4, bit2, bit1;
+    
+    // Handle special cases for 0 and -1
+    // When x is 0 or -1, the result is 1
+    if (x == 0 || x == -1) return 1;
+    
+    // Make x positive if it's negative
+    sign = x >> 31;  // This will be 0xFFFFFFFF if x is negative, 0 otherwise
+    x = (sign & ~x) | (~sign & x);  // Flip all bits if x is negative, leave it as is if it's positive
+
+    // Now we will find the position of the most significant bit
+
+    // Check if there are non-zero bits in the high 16 bits
+    bit16 = !!(x >> 16) << 4;
+    x = x >> bit16;  // If yes, shift right by 16 bits
+    
+    // Now check the next 8 bits
+    bit8 = !!(x >> 8) << 3;
+    x = x >> bit8;  // If yes, shift right by 8 bits
+    
+    // Now check the next 4 bits
+    bit4 = !!(x >> 4) << 2;
+    x = x >> bit4;  // If yes, shift right by 4 bits
+    
+    // Now check the next 2 bits
+    bit2 = !!(x >> 2) << 1;
+    x = x >> bit2;  // If yes, shift right by 2 bits
+    
+    // Now check the next bit
+    bit1 = !!(x >> 1);
+    
+    // Add up the positions, plus 1 for the sign bit
+    return bit16 + bit8 + bit4 + bit2 + bit1 + 2;
 }
+
 //float
 /* 
  * floatScale2 - Return bit-level equivalent of expression 2*f for
