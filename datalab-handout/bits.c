@@ -333,8 +333,40 @@ unsigned floatScale2(unsigned uf) {
  *   Rating: 4
  */
 int floatFloat2Int(unsigned uf) {
-  return 2;
+    unsigned sign = (uf >> 31) & 1;
+    unsigned exp = (uf >> 23) & 0xFF;
+    unsigned frac = uf & 0x7FFFFF;
+    unsigned bias = 127;
+
+    int adjusted_exp = exp - bias;
+
+    // Handle special cases
+    if (exp == 0xFF) {
+        // NaN or infinity
+        return 0x80000000u;
+    }
+
+    if (exp == 0 || adjusted_exp < 0) {
+        // Denormalized numbers and zero, or too small to be represented as int
+        return 0;
+    }
+
+    // If the value is too large to fit in a 32-bit int, return 0x80000000u
+    if (adjusted_exp >= 31) {
+        return 0x80000000u;
+    }
+
+    // Normalize the fraction and account for the implicit leading 1
+    frac = frac | 0x800000;
+    int shift_amount = 23 - adjusted_exp;
+
+    // Shift the fraction accordingly
+    int result = (shift_amount >= 0) ? (frac >> shift_amount) : (frac << -shift_amount);
+
+    // Apply the sign bit
+    return (sign) ? -result : result;
 }
+
 /* 
  * floatPower2 - Return bit-level equivalent of the expression 2.0^x
  *   (2.0 raised to the power x) for any 32-bit integer x.
@@ -349,5 +381,21 @@ int floatFloat2Int(unsigned uf) {
  *   Rating: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    // Handle cases where result is too small or too large
+    if (x < -126) {
+        // Too small to be represented, even as a denormalized number
+        return 0;
+    }
+    if (x > 127) {
+        // Too large to be represented, return +INF
+        return 0xFF << 23;
+    }
+    
+    // For other cases, compute the exponent
+    int e = x + 127;
+    
+    // Now create the bit representation of the floating-point number
+    unsigned result = e << 23;
+    
+    return result;
 }
