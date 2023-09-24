@@ -459,3 +459,56 @@ x 11111011 (-5 in decimal)
 1111101011
 
 Now, since we're working with 8-bits, we take the rightmost 8 bits, which is 11101011 => -85.
+
+### Multiplying by Constants
+
+Multiplication by a power of 2 is efficiently done using bit shifting. For example, multiplying a number `x` by `2^k` is the same as shifting `x` to the left by `k` positions.
+
+When a program has expressions like `x * 14`, a smart compiler can replace this multiplication with a combination of shifting, addition, and subtractions, since it's faster.
+
+- EXAMPLE: `x * 14` can be re-written as `(x << 3) + (x << 2) + (x << 1)` which translates to three shift operations and two addition operations, replacing the slower multiplication operation.
+
+In assembly language, there's an instruction called `lea` (Load Effective Address) that can also be used for certain multiplication operations, especially when the multiplier is a small constant.
+
+- To compute `3 * x`, the expression can be re-written as `(x << 1) + x`, which is two times `x` plus `x`. This can be computed with a single `lea` instruction.
+
+### Division and Right Shifting in C
+
+In computing, division is relatively slow compared to other operations like addition, subtraction, and multiplication. However, division by a power of 2 can be significantly faster by utilizing bit shifting operations. In C, this is achieved with the `>>` operator.
+
+- Division by Power of 2 for Unsigned Integers:
+
+* For unsigned integer division, a logical right shift can be used to divide a number by a power of 2. The operation `x >> k` in C is equivalent to the division `x / 2^k`.
+
+- Division by a Power of 2 for Signed Integers:
+
+* When dividing signed integers, it's important to consider how they are represented in binary. In most systems, signed integers are represented using two's complement notation. In this notation, the leftmost bit (most significant bit) is used to represent the sign of the number: 0 for positive and 1 for negative.
+* When you right shift a signed integer, the operation fills in the leftmost bits with the sign bit(an operation known as sign extension) to keep the sign of the number the same => AIRTHMETIC RIGHT SHIFT.
+* However, there's a caveat with negative numvers. Integer division in C rounds towards 0, but right shifting rounds down. So, if you right shift -9, you might not get the expected result:
+
+```C
+int x = -9;  // Binary: 11110111
+int result = x >> 1;  // Binary: 11111011 = -5 (but -9 / 2 = -4.5, rounded towards 0 = -4)
+
+```
+
+To fix this rounding issue, you can add a "bias" to the negative number before right shifting.
+
+```C
+int k = 1;
+int result = (x + (1 << k) - 1) >> k;  // (1 << k) - 1 = 1, so (-9 + 1) >> 1 = -4
+
+```
+
+This adjusts the rounding for negative x. The expression (1 << k) - 1 computes a bias, which when added to x, ensures that the division rounds towards zero.
+
+## Understanding Floating-Point Representation
+
+Floating-point representation is a way to write real numbers that allows for a wide range of values with a consistent number of digits. It is especially useful when dealing with very large or very small numbers, or when approximating real numbers in calculations. The IEEE 754 standard has been widely adopted since 1985 to ensure consistency and accuracy in representing and operating on floating-point numbers across different computer systems.
+
+The IEEE 754 Standard specifies the representation for floating-point numbers including the bit layour and the operations on them, ensuring consistency across different computing systems. This format separates the bits into three parts:
+
+- Sign bit(s): 1 bit
+- Exponent (e): 8 or 11 bits
+- Fraction (f): 23 or 52 bits
+  The value of the number is calculated as (-1)^s _ (1 + f) _ 2^(e - 127)
