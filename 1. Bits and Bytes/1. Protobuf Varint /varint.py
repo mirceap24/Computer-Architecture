@@ -59,10 +59,16 @@ def decode(varn):
     
     return decoded_integers
 
-# Test the encode and decode functions with multiple varints.
-encoded_sequence = encode(150) + encode(200) + encode(250)  # Concatenating three varints.
-decoded_sequence = decode(encoded_sequence)
-print(decoded_sequence)  # Output: [150, 200, 250]
+def zigzag_encode(n):
+    return (n << 1) ^ (n >> 31)
+
+def zigzag_decode(encoded):
+    return (encoded >> 1) ^ -(encoded & 1)
+
+# # Test the encode and decode functions with multiple varints.
+# encoded_sequence = encode(150) + encode(200) + encode(250)  # Concatenating three varints.
+# decoded_sequence = decode(encoded_sequence)
+# print(decoded_sequence)  # Output: [150, 200, 250]
 
 
 
