@@ -19,25 +19,26 @@ def encode(n):
         out.append(part)
     return bytes(out)
 
-def decode(varn):
+def decode_one(varn):
     """
-    This function decodes a varint encoded byte sequence 'varn' back into an integer.
-    1. It iterates through the bytes in 'varn' in reverse order.
-    2. It shifts the accumulator left by 7 bits to make room for the next 7 bits from the current byte.
-    3. It discards the most significant bit (MSB) of the current byte, which is the continuation flag in varint encoding.
-    4. It accumulates the 7 bits from the current byte into the accumulator.
-    5. Finally, it returns the decoded integer.
+    Decodes a single varint from the given byte sequence starting at the given index.
+    Returns the decoded integer and the index where the next varint begins.
     """
     n = 0  # Initialize the accumulator to 0.
+    i = 0  # Set the current index to 0
 
-    for b in reversed(varn):  # Iterate through the bytes in 'varn' in reverse order.
+    for b in varn[i:]:  # Start iterating from the given start index.
         n <<= 7  # Shift the accumulator left by 7 bits to make room for the next 7 bits.
         n |= (b & 0x7f)  # Discard the MSB of the current byte, and accumulate the remaining 7 bits into the accumulator.
+        i += 1  # Increment the index.
+        if not (b & 0x80):  # If the MSB is not set, this is the last byte in this varint.
+            break
 
-    return n  # Return the decoded integer.
+    return n  # Return the decoded integer and the next index.
+
 
 
 for n in range(10):
-    assert decode(encode(n)) == n
+    assert decode_one(encode(n)) == n
 
 print("ok!")
