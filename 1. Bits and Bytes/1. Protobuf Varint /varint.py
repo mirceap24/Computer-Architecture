@@ -25,7 +25,7 @@ def decode_one(varn):
     Returns the decoded integer and the index where the next varint begins.
     """
     n = 0  # Initialize the accumulator to 0.
-    i = 0  # Set the current index to 0
+    i = 0  # Set the current index to start.
 
     for b in varn[i:]:  # Start iterating from the given start index.
         n <<= 7  # Shift the accumulator left by 7 bits to make room for the next 7 bits.
@@ -34,7 +34,35 @@ def decode_one(varn):
         if not (b & 0x80):  # If the MSB is not set, this is the last byte in this varint.
             break
 
-    return n  # Return the decoded integer and the next index.
+    return n # Return the decoded integer and the next index.
+
+def decode(varn):
+    """
+    Decodes a sequence of varints from the given byte sequence.
+    Returns a list of decoded integers.
+    """
+    i = 0  # Set the current index to start.
+    decoded_integers = []  # Initialize an empty list to store the decoded integers.
+
+    while i < len(varn):  # Continue until all bytes have been processed.
+        n = 0  # Initialize the accumulator to 0.
+        shift = 0  # Initialize a variable to keep track of the number of bits to shift.
+        while True:  # Start iterating.
+            b = varn[i]  # Get the current byte.
+            n |= (b & 0x7F) << shift  # Shift the 7 bits of the current byte to the left by the shift amount, then OR it with the accumulator.
+            i += 1  # Increment the index.
+            if not (b & 0x80):  # If the MSB is not set, this is the last byte in this varint.
+                break  # Exit the loop.
+            shift += 7  # Increment the shift amount by 7 for the next byte.
+
+        decoded_integers.append(n)
+    
+    return decoded_integers
+
+# Test the encode and decode functions with multiple varints.
+encoded_sequence = encode(150) + encode(200) + encode(250)  # Concatenating three varints.
+decoded_sequence = decode(encoded_sequence)
+print(decoded_sequence)  # Output: [150, 200, 250]
 
 
 
